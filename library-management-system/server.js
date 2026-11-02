@@ -13,6 +13,22 @@ let books = [
     category: "Programming",
     quantity: 5,
     available: 5
+  },
+  {
+    id: 102,
+    title: "Python Programming",
+    author: "Guido van Rossum",
+    category: "Programming",
+    quantity: 4,
+    available: 4
+  },
+  {
+    id: 103,
+    title: "Clean Code",
+    author: "Robert C. Martin",
+    category: "Software Engineering",
+    quantity: 3,
+    available: 3
   }
 ];
 
@@ -25,6 +41,40 @@ app.get("/api/books", (req, res) => {
     message: "Books retrieved successfully",
     count: books.length,
     books: books
+  });
+});
+
+app.get("/api/books/search", (req, res) => {
+  const { q, title, author, category } = req.query;
+
+  if (!q && !title && !author && !category) {
+    return res.status(400).json({
+      message: "Please provide a search keyword or title, author, or category"
+    });
+  }
+
+  const results = books.filter(book => {
+    const matchesQ = !q ||
+      book.title.toLowerCase().includes(q.toLowerCase()) ||
+      book.author.toLowerCase().includes(q.toLowerCase()) ||
+      book.category.toLowerCase().includes(q.toLowerCase());
+
+    const matchesTitle = !title ||
+      book.title.toLowerCase().includes(title.toLowerCase());
+
+    const matchesAuthor = !author ||
+      book.author.toLowerCase().includes(author.toLowerCase());
+
+    const matchesCategory = !category ||
+      book.category.toLowerCase().includes(category.toLowerCase());
+
+    return matchesQ && matchesTitle && matchesAuthor && matchesCategory;
+  });
+
+  res.status(200).json({
+    message: "Search completed successfully",
+    count: results.length,
+    books: results
   });
 });
 
@@ -77,6 +127,56 @@ app.post("/api/books", (req, res) => {
   });
 });
 
+app.post("/api/books/:id/issue", (req, res) => {
+  const id = Number(req.params.id);
+
+  const book = books.find(b => b.id === id);
+
+  if (!book) {
+    return res.status(404).json({
+      message: "Book not found"
+    });
+  }
+
+  if (book.available <= 0) {
+    return res.status(400).json({
+      message: "Book is currently not available"
+    });
+  }
+
+  book.available--;
+
+  res.status(200).json({
+    message: "Book issued successfully",
+    book: book
+  });
+});
+
+app.post("/api/books/:id/return", (req, res) => {
+  const id = Number(req.params.id);
+
+  const book = books.find(b => b.id === id);
+
+  if (!book) {
+    return res.status(404).json({
+      message: "Book not found"
+    });
+  }
+
+  if (book.available >= book.quantity) {
+    return res.status(400).json({
+      message: "All copies are already returned"
+    });
+  }
+
+  book.available++;
+
+  res.status(200).json({
+    message: "Book returned successfully",
+    book: book
+  });
+});
+
 app.put("/api/books/:id", (req, res) => {
   const id = Number(req.params.id);
 
@@ -98,17 +198,23 @@ app.put("/api/books/:id", (req, res) => {
 
   if (title !== undefined &&
       (typeof title !== "string" || !title.trim())) {
-    return res.status(400).json({ message: "Invalid title" });
+    return res.status(400).json({
+      message: "Invalid title"
+    });
   }
 
   if (author !== undefined &&
       (typeof author !== "string" || !author.trim())) {
-    return res.status(400).json({ message: "Invalid author" });
+    return res.status(400).json({
+      message: "Invalid author"
+    });
   }
 
   if (category !== undefined &&
       (typeof category !== "string" || !category.trim())) {
-    return res.status(400).json({ message: "Invalid category" });
+    return res.status(400).json({
+      message: "Invalid category"
+    });
   }
 
   if (quantity !== undefined) {
@@ -163,3 +269,4 @@ app.delete("/api/books/:id", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Library Management System running on port ${PORT}`);
 });
+
